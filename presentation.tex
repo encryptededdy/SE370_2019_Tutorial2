@@ -51,4 +51,34 @@
 
 \begin{document}
 \frame{\titlepage}
+\section{Fork}
+\begin{frame}
+  \frametitle{Fork}
+  Fork creates a new process, which becomes a \emph{child} of the caller. Both processes then contiune execution from the line where fork was called.
+  \begin{enumerate}
+    \item Fork returns negative when forking failed
+    \item Fork returns zero within the new child process
+    \item Fork returns a positive value with the process id within the parent. This is a \texttt{pid\_t}
+  \end{enumerate}
+\end{frame}
+\begin{frame}
+  \frametitle{Fork example}
+  \lstinputlisting[style=customc, firstline=5]{code/forkExcercise.c}
+  How many times are each line printed, and when is the return zero and non-zero?
+\end{frame}
+\begin{frame}
+  \frametitle{Forked data}
+  When forked, all pages allocated for a process are copied. This includes pages that store the stack, or memory on the heap (i.e. from malloc).\\
+  Copy-on-Write (CoW) is used so unless the child process modifies the data, a needless copy is not made.
+
+\end{frame}
+\begin{frame}
+  \frametitle{A note on addresses}
+  Consider this code. What's returned?
+  \lstinputlisting[style=customc, firstline=5]{code/virtExample.c}
+  \pause
+  How do we have different data at the same memory address?\\
+  \pause
+  A: Virtual memory space is unchanged, even if a copy is made in physical memory.
+\end{frame}
 \end{document}
