@@ -4,6 +4,21 @@
 \usepackage[utf8]{inputenc}
 \usepackage{listings}
 \usepackage{ulem}
+\usepackage{amsmath}
+
+\lstdefinestyle{customcbig}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+%  frame=L,
+  xleftmargin=\parindent,
+  language=C,
+  showstringspaces=false,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\bfseries\color{green!40!black},
+  commentstyle=\itshape\color{purple!40!black},
+  identifierstyle=\color{blue},
+  stringstyle=\color{orange},
+}
 
 \lstdefinestyle{customc}{
   belowcaptionskip=1\baselineskip,
@@ -80,5 +95,84 @@
   How do we have different data at the same memory address?\\
   \pause
   A: Virtual memory space is unchanged, even if a copy is made in physical memory.
+\end{frame}
+\begin{frame}[fragile]
+  \frametitle{Waiting for children}
+  \texttt{waitpid} can be used to wait for children. Its use is quite simple.
+  \begin{lstlisting}[style=customcbig]
+    pid_t waitpid(pid_t pid, int *statusPtr, int options);
+  \end{lstlisting}
+  \begin{itemize}
+    \item \texttt{pid} is the pid to wait on. Use -1 for any children, 0 for any child with same group ID or $x < -1$ for children in group $\lvert x\lvert$
+    \item \texttt{status} is a pointer to an int to store the return status of the terminated process
+    \item \texttt{options} options such as WNOHANG - see manpage
+    \item Return value is the id of the terminated process (if you used pid $<1$)
+  \end{itemize}
+  
+
+\end{frame}
+\section{Pipe}
+\begin{frame}
+  \frametitle{Pipes}
+  Consider the case where we have two processes after a fork - how can we communicate between them? We can use a pipe.\\
+  \texttt{int pipe(int fds[2])}\\
+  \begin{itemize}
+    \item \texttt{fd[0]} will be the file descriptor for the read end
+    \item \texttt{fd[1]} will be the file descriptor for the write end
+    \item 0 returned on success, -1 on error (no other returns)
+  \end{itemize}
+  We should create this pipe before forking, such that after forking both processes have a reference to the pipe.
+\end{frame}
+\begin{frame}
+  \frametitle{Pipe example}
+  Sending strings through a pipe, from the child process to the parent process.
+\end{frame}
+\begin{frame}
+  \frametitle{Other notes}
+  \begin{itemize}
+    \item Pipes are unidirectional. If you need bidirectional communication use two pipes
+    \item Remember to close the side of the pipe you're not using in a given process
+    \item \texttt{read} will read 0 bytes when there are no more open write fds on the pipe
+    \item While you can have more than 2 processes interact with a pipe, be careful about how you're using it as it may not work the way you intend.
+  \end{itemize}
+\end{frame}
+\section{Shared Memory}
+\begin{frame}
+  \frametitle{mmap}
+  Allows you to map files or devices into memory. However, this can also be used for creating a shared memory mapping that can be used by multiple processes.\newline
+  \newline
+  You can find it in \texttt{\#include <sys/mman.h>}
+\end{frame}
+\begin{frame}[fragile]
+  \frametitle{mmap parameters}
+  \begin{lstlisting}[style=customcbig]
+    void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
+  \end{lstlisting}
+  \begin{itemize}
+    \item \texttt{addr} is the address we want to start mapping. NULL to let kernel pick
+    \item \texttt{length}: size of memory we want to map
+    \item \texttt{prot}: options about page (more later)
+    \item \texttt{flags}: more page options (more later)
+    \item \texttt{fd}: file descriptor, if mapping a file
+    \item \texttt{offset}: this plus size is used to compute where we're accessing, in the case of file mapping.
+  \end{itemize}
+\end{frame}
+\begin{frame}[fragile]
+  \frametitle{Using mmap for shared memory}
+  \begin{lstlisting}[style=customcbig]
+    int *shared = mmap(NULL, sizeof(int), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0); 
+  \end{lstlisting}
+  \begin{itemize}
+    \item \texttt{addr} is NULL because we don't care where to place the mapping (let kernel pick)
+    \item \texttt{length} is the size of an int, as we want to store an int
+    \item \texttt{prot} is read/write because... obvious
+    \item \texttt{flags} is \texttt{SHARED} (we want shared memory) and \texttt{ANONYMOUS} (as opposed to file mapping)
+    \item \texttt{fd} is -1 as we're not mapping a file
+    \item \texttt{offset} is 0 as we're not mapping a file
+  \end{itemize}
+\end{frame}
+\begin{frame}
+  \frametitle{mmap example code}
+  \lstinputlisting[style=customctiny, firstline=5]{code/mmap.c}
 \end{frame}
 \end{document}
